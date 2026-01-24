@@ -1,0 +1,8 @@
+executable = executables/submit_simulations.sh
+arguments  = $(Process) ${MAC_NAME}
+priority   = 5
+log        = results/condor_logs/sim_logs/$(Process).log
+output     = results/condor_logs/sim_outputs/$(Process).out
+error      = results/condor_logs/sim_errors/$(Process).err
+request_memory = 1024MB
+queue 20

@@ -1,0 +1,10 @@
+
+        executable = executables/submit_simulations.sh
+        arguments  = $(Process) 28.mac
+        log        = results/condor_logs/sim_logs/$(ClusterId)_$(Process).log
+        output     = results/condor_logs/sim_outputs/$(ClusterId)_$(Process).out
+        error      = results/condor_logs/sim_errors/$(ClusterId)_$(Process).err
+        priority   = 5
+        request_memory = 1024MB
+        queue 20
+        

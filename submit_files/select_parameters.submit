@@ -1,0 +1,7 @@
+executable = executables/select_parameters.sh
+priority   = 5
+log        = results/condor_logs/select_logs/$(Cluster)_$(Process).log
+output     = results/condor_logs/select_outputs/$(Cluster)_$(Process).out
+error      = results/condor_logs/select_errors/$(Cluster)_$(Process).err
+request_memory = 1024MB
+queue 1

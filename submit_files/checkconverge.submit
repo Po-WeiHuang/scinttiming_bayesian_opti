@@ -1,0 +1,7 @@
+executable = executables/checkconverge.sh
+priority   = 5
+log        = results/condor_logs/coverge_logs/$(Cluster)_$(Process).log
+output     = results/condor_logs/coverge_outputs/$(Cluster)_$(Process).out
+error      = results/condor_logs/coverge_errors/$(Cluster)_$(Process).err
+request_memory = 512MB
+queue 1

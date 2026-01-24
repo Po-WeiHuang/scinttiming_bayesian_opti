@@ -1,0 +1,7 @@
+executable = executables/time_residuals.sh
+priority   = 5
+log        = results/condor_logs/residuals_logs/$(Cluster)_$(Process).log
+output     = results/condor_logs/residuals_outputs/$(Cluster)_$(Process).out
+error      = results/condor_logs/residuals_errors/$(Cluster)_$(Process).err
+request_memory = 1024MB
+queue 1
