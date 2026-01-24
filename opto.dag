@@ -1,0 +1,15 @@
+JOB MC_SIMULATION     submit_files/simulate.submit
+SCRIPT PRE MC_SIMULATION executables/delete_simulations.sh
+SCRIPT PRE MC_SIMULATION src/update_simulate_submit.py
+RETRY MC_SIMULATION 2
+
+JOB TIME_RESIDUALS    submit_files/time_residuals.submit
+RETRY TIME_RESIDUALS 2
+
+JOB SELECT_PARAMETERS submit_files/select_parameters.submit
+RETRY SELECT_PARAMETERS 2
+
+
+PARENT MC_SIMULATION CHILD TIME_RESIDUALS
+PARENT TIME_RESIDUALS CHILD SELECT_PARAMETERS
+

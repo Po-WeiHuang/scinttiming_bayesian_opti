@@ -1,0 +1,4 @@
+SUBDAG EXTERNAL PAR_TRAINING dag_running/opto.dag
+RETRY PAR_TRAINING 1000
+
+SCRIPT POST PAR_TRAINING executables/checkconverge.sh
