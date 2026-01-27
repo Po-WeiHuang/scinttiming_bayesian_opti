@@ -73,7 +73,7 @@ if __name__ == "__main__":
         # check in covergence
         # define covergence if
         # compared the minimum of chi2
-        # other 3 points whose chi2 are within 5% difference with chi2_min +
+        # other 3 points whose
         # chi2_min < 1500 +
         # t1,A1 are within 5%
         chi2_min = train_sort[0,-2]

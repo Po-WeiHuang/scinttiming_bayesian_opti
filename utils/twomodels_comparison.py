@@ -92,8 +92,11 @@ def extract_residuals(ratdsdir,particletype: str):
 
     
 if __name__ == "__main__":
-    data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_po_4000.0.npy", allow_pickle = True)
+    data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_bi_4000.0.npy", allow_pickle = True)
     bay_res = extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi214Trial2/bestparratds","Bi214")
     gridscan_res= extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi214Trial2/gridscanparratds","Bi214")
+    #data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_po_4000.0.npy", allow_pickle = True)
+    #bay_res = extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Po214Trial1/bestparratds","Po214")
+    #gridscan_res= extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Po214Trial1/gridscanparratds","Po214")
 
     threetime_residual_agreement(data_residuals, bay_res,gridscan_res)

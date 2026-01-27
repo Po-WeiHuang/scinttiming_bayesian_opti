@@ -95,7 +95,7 @@ def extract_residuals(particletype: str):
     return time_residuals
 
 
-def cal_objective():
+def cal_objective(particletype: str):
     with open("algo_log.txt", "a") as outlog:
         outlog.write("\n\n")
         outlog.write(f"\nExtracted simulated residuals.")
@@ -107,8 +107,14 @@ def cal_objective():
         print(f"\nExtracted simulated residuals.")
 
         # load up the data residuals to compare to
-        #data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_bi_4000.0.npy", allow_pickle = True)
-        data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_po_4000.0.npy", allow_pickle = True)
+        if particletype == "Bi214":
+            print("Loading Bi214 tres data")
+            outlog.write("Loading Bi214 tres data")
+            data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_bi_4000.0.npy", allow_pickle = True)
+        elif particletype == "Po214":
+            print("Loading Po214 tres data")
+            outlog.write("Loading Bi214 tres data")
+            data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_po_4000.0.npy", allow_pickle = True)
         #data_residuals = np.concatenate(data_residuals)
 
         # create the binned histograms and calculate the chi2
@@ -153,10 +159,13 @@ if __name__ == "__main__":
         print("### THIS IS TIME_RESIDUALS SCRIPT ###\n")
         savepath  = "results/pars"
 
+        with open("paramsbound.json", "r") as f:
+            boundparams = json.load(f)
+        
         with open("currentparams.json", "r") as f:
             params = json.load(f)
         iteration =  params["iter"] + 1
-        data_residuals,sim_residuals,chi2 = cal_objective()
+        data_residuals,sim_residuals,chi2 = cal_objective(boundparams["Type"])
         outlog.write(f"In iteration {iteration}: chi2 {chi2}")
         print(f"In iteration {iteration}: chi2 {chi2}")
         #now = datetime.now().replace(microsecond=0)
