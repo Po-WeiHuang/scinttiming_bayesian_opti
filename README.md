@@ -4,7 +4,7 @@
 Timing information is essentail to the analysis in the SNO+ Experiment. The correct timing can differentiate signal from noise, to enhance the purity of signals. As a liquid scintillator-base experiment, it is needed to calibrate the overall scintillation timing during the cocktail constitution changes.  
 Basically, the emission of scintillator photons can be parametrised in following empirical form
     $$P(t)=\sum_{i=1}^{i=4}A_i\frac{e^{-t/t_i}-e^{-t/t_r}}{t_i-t_r}$$
-where $(t_i,A_i)$ are the decay timing pairs and $t_i$ represents the rising time. The timing distribution, tres, can be used for parametrising the scintillation timing parameters. It is defined as:
+where $(t_i,A_i)$ are the decay timing pairs and $t_i$ represents the rising time. A constrain is employed as normalisation: $\sum{A_i}=1$ The timing distribution, tres, can be used for parametrising the scintillation timing parameters. It is defined as:
     $$t_{res} = t_{PMT} - t_{TOF} - t_{Det}$$ 
 where $t_{PMT}$,$t_{TOF}$ and $t_{Det}$ denote as PMT hit time, time of flight between photon collaction and emission point and detection time. However, this physical parameter is not pure scintillator timing but convolved with optical process such as absoption, scattering and detector response. Therefore, one can only rely on repetitive simulation until matching with data. In the past, researchers dealt with this problem with violent grid scan, in other words scanning through parameter space independently to find the parameter set that produced the best match. Fortunately, this package provides a optimisation method to mathematically propose the most valuable point to simulate in each iteration, reducing the covergence period. 
    
@@ -47,7 +47,20 @@ Normally there are no close-form solutions of EI in this case of the posterior G
 
 Therefore, a MC-based acquisition function comes and serves a good approximation on finding valuable simulation point(s).
 
-Botorch uses Monte-Carlo sampling to use the sample average to approximate the function. It simulates based on GP process each time but a reparametrisation trick can be used to enable stable gradients, efficient on optimisation. The acquisition here still uses EI, but instead of doing the integral, it get the expectation from sampling from that given proposed point. The sampling values can also be given from multiple GP but using different hyperparameter set for example (in case 1). However,a reparametrising was developed and introduced $eqsilon$, with requirement of $\epsilon=N(0,1)$. The value of the posterior surrogates are reparameterised as $$\chi^(2)(x) =\mu(x)+\sigma(x)\epsilon$$. If there are multiple means and uncertainties, it is just doing the average. The mean and uncertainty are deterministic terms while all randomness components are controlled by $\epsilon$. Therefore, the gradient $\partial(Acq(x)/\partial x)$ is calculable, because $\mu(x)$ and $\sigma(x)$ are smooth and differentiable. 
+Botorch uses Monte-Carlo sampling to use the sample average to approximate the function. It simulates based on GP process each time but a reparametrisation trick can be used to enable stable gradients, efficient on optimisation. The acquisition here still uses EI, but instead of doing the integral, it get the expectation from sampling from that given proposed point. The sampling values can also be given from multiple GP but using different hyperparameter set for example (in case 1). However,a reparametrising was developed and introduced $eqsilon$, with requirement of $\epsilon=N(0,1)$. The value of the posterior surrogates are reparameterised as $$\chi^{2}(x) =\mu(x)+\sigma(x)\epsilon$$. If there are multiple means and uncertainties, it is just doing the average. The mean and uncertainty are deterministic terms while all randomness components are controlled by $\epsilon$. Therefore, the gradient $\partial(Acq(x)/\partial x)$ is calculable, because $\mu(x)$ and $\sigma(x)$ are smooth and differentiable. 
+
+There are two dimensions here, one is batch size, the output size you want to return, looping as label j. The other one is MC sample size, controlling the number of times of drawing the samples from posterior, looping as label i. The total batch size and number of samples are labeled as q and N respectively. The full process is:
+1.  Proposing a batch $X=(x_1....x_{i}...x_{q})$ 
+2.  Draw standard normal noise $z=N(0,1)$ i times in jth sample draw, labeled as $\epsilon_{i,j}$. 
+3. Reparametries posterior samples (return ith posterior values)
+4. Repeating 1-3 j times so the return is an posterior values with shape (i,j).
+5. Calculating q-Expected Improvement (qEI),
+$$\mathrm{qEI}(X)\approx \dfrac{1}{N}\sum_{i=1}^{N}\max\!\big(\max_{j=1,\ldots,q}(\xi_{i,j}-f^*),0\big)$$
+where $f^*$ is the best function value so far. Don't be panic, let's me explain as following. In each draw, we only get the improvement that is the maximum over the points. The we average the improvement based on the mc sample times, and this scalar is the qEI at propose point $X=(x1,....x_q)$. It can be interpretted as on average, how much do the proposed set point get win over the best measurement. 
+The exciting bit is the qEI value is gradient-traceable due to the reparameterisation trick introdced above. therefore, by backward search of $$\Delta_{X}qEI(x)$$ to propose next batch $X_{t+1}=X_{t}+\eta \Delta_{X}qEI(x)$ until convergence.
+Hang on there. There is a sample method of posterior that might potentially be helpful to the convergence rate and therefore boosting the optimisation speed of acquisition function. The quasi-mc sampling over posterior distribution is designed to reduce variance when qEI is estimated over samples. The trick is instead of using reparametrisation trick above in classical mc sample method, you use a deterministic points $(z_i....z_N)$ that is evenly distributed over normal distribution at tha point x, to guarantee low discrepancy of z. However, the disadvantage of using this trick is to introduce sampling biases over approximate posterior distribution. However, research shows that the extent of bias is converge even in super-high dimension problems and the gain of optimisation spped of acuisition is very tempting. The default of base samples (deterministic series over normal distribution) are 500 in BoTorch.
+
+
 
 
 
@@ -88,6 +101,15 @@ This package is assumed user have already owned the Bi214 and Po214 tres in the 
 in `result/plots`. 
 
 7. If user is interested in two models's comparison along with data, user should revise the directory in `utils/twomodels_comparison.py`  and run it with python command.
+
+A few example plots are shoen below when user executes `utils/plot_chi2_iter.py` or automatically generated by program.  
+![iterlogchi2](images/iterlogchi2.png)  
+Figure 2: $\chi2$ as a function of iterations.
+![trescomparison](images/tres_comparison.png)  
+Figure 3: tres compaison between data and mc sample at certain iteration.
+![T1T2](images/T1_T2.png)  
+Figure 4: Predicted mean and uncertainty from Surrogate and the log(EI) over the projection space over the maximum log(EI) point. 
+
 
 
 
