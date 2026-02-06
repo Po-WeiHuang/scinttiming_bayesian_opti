@@ -18,7 +18,10 @@ Figure 1: bayesian optimisation full procedure from https://botorch.org/docs/ove
 ### 1. Surrogate Function
 Surrogate function is the "guess" for the objective from posterior measurements. In this scenario, it is the $\chi^2$ over the 9 dimension timing space. This calibration work uses Gaussian Process (GP) to parametrise the full objective distribution from multivariate normal distribution. It consists of a mean function $\mu(\vec{X})$ and covariance kernel $k(x,x^{pron})$.
 There are several choices of function form for kernel, and the most common one is Radial Basis Kernel (RBF), which is formulated by
-    $$K_{RBF}(\vec{x}, \vec{x'}) = \exp\left( -\frac{\|\vec{x} - \vec{x'}\|^2}{2\ell^2} \right)$$
+    $$K_{RBF}(\vec{x_i}, \vec{x'_i}) = \exp\left( -\frac{1}{2\ell^2}\sum_i\|\vec{x_i} - \vec{x'_i}\|^2\right)$$
+All features share the same length scale in the kernel, suggisting all dimensions are viewed as equal importance towards the surrogate. In this package, the GP adopts this kernel to calculate posterior and the hyparameters tuning.
+However, in higher dimensions One might find the length scale can be set as hyperparameter for different features. This is named as automated relevance determination(ARD) RBF:   
+    $$K_{ARDRBF}(\vec{x_i}, \vec{x'_i}) = \exp\left( -\frac{1}{2}\sum_i\frac{\|\vec{x_i} - \vec{x'_i}\|^2}{\ell_i^2} \right)$$
 The strength of correlations between two parameter values, $l$, is a tunable quantity and can be optimised in each iteration. For 
 Surrogate predicts mean and uncertainty adaptively using this mean and kernel from the posterior distributions over the outputs. I would not bored you with formulae, but the take home message is that the prediction will get closer to the truth after interative measurements.     
 ### 2. Acquisition Function
@@ -34,14 +37,20 @@ Fortunately, this integral can be solved analytically by changing variable $z_{0
 
 However, even in 9 dimensions, performing optimisation searches in the acquisition is a pain. Traditionally, in this classical method, BoTorch will take a few inital points randomly and gradually climbed up from the analytic gradients until maximum is found.
 
-In the SingleGP case, which is used in this package, the hyperparameters such as length scale (l) to control the covariance, or the noise level under the covariance matrix, are masimised under automated relevance determination (ARD):
-$$log(p(\chi^2 | X,\theta  ))=-\frac{1}{2}(\chi^2)^{T}K^{-1}(\chi^2)-\frac{1}{2}log(| K |)-\frac{n}{2}log(2\pi)$$
+In the SingleGP case, which is used in this package, the hyperparameters such as length scale (l) to control the covariance, or the noise level under the covariance matrix, are masimised under marginalised likelihood (p). The marginal likelihood measures how well the observed data are explained by the GP model after integrating over all possible latent functions consistent with the prior defined by the kernel hyperparameters. Each latent function is just a fancy name of the values drawing from a GP. Formally, for fixed hyperparameters $\theta$ the marginal likelihood is
+$$
+p(\mathbf{\chi^2} \mid X, \theta)
+=
+\int p(\mathbf{\chi^2} \mid \mathbf{f}) \, p(\mathbf{f} \mid X, \theta)\, d\mathbf{f}
+$$   
+Luckliy, it has a closed form and can be remormulated by kernel
+$$log(p(\chi^2 | X,\theta  ))=-\frac{1}{2}(\chi^2)^{T}(K+\sigma^2I)^{-1}(\chi^2)-\frac{1}{2}log(| K +\sigma^2I|)-\frac{n}{2}log(2\pi)$$
 The best hyperparameters set is chosen by maximising this marginal likelihood by gradient optimser.
 
 ### MC-based Acquisition Function
 (Optional Reading)
 Two sets of problem are suitable for this use.
-1. In the hi dimension parameters space when optimising the hyper-parameters using the ARD function. It is hard to converge and oftenly overconfident on the hyperparameters. Therefore, instead of taking the posterior GP from a given set of hyperparameter, a set of GP from plausible hyperparameters sets are included. This is the reason of the posterior not being gaussian anymore so the EI closed form might be failed.
+1. In the hi dimension parameters space where optimising the hyper-parameters are unable under marginalised likelihood. It is hard to converge and oftenly overconfident on the hyperparameters. Therefore, instead of taking the posterior GP from a given set of hyperparameter, a set of GP from plausible hyperparameters sets are included. This is the reason of the posterior not being gaussian anymore so the EI closed form might be failed.
 2. multi-points outputs with correlation 
 Normally there are no close-form solutions of EI in this case of the posterior GP.
 
