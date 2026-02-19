@@ -6,7 +6,7 @@ Basically, the emission of scintillator photons can be parametrised in following
     $$P(t)=\sum_{i=1}^{i=4}A_i\frac{e^{-t/t_i}-e^{-t/t_r}}{t_i-t_r}$$
 where $(t_i,A_i)$ are the decay timing pairs and $t_i$ represents the rising time. A constrain is employed as normalisation: $\sum{A_i}=1$ The timing distribution, tres, can be used for parametrising the scintillation timing parameters. It is defined as:
     $$t_{res} = t_{PMT} - t_{TOF} - t_{Det}$$ 
-where $t_{PMT}$,$t_{TOF}$ and $t_{Det}$ denote as PMT hit time, time of flight between photon collaction and emission point and detection time. However, this physical parameter is not pure scintillator timing but convolved with optical process such as absoption, scattering and detector response. Therefore, one can only rely on repetitive simulation until matching with data. In the past, researchers dealt with this problem with violent grid scan, in other words scanning through parameter space independently to find the parameter set that produced the best match. Fortunately, this package provides a optimisation method to mathematically propose the most valuable point to simulate in each iteration, reducing the covergence period. 
+where $t_{PMT}$, $t_{TOF}$ and $t_{Det}$ denote as PMT hit time, time of flight between photon collaction and emission point and detection time. However, this physical parameter is not pure scintillator timing but convolved with optical process such as absoption, scattering and detector response. Therefore, one can only rely on repetitive simulation until matching with data. In the past, researchers dealt with this problem with violent grid scan, in other words scanning through parameter space independently to find the parameter set that produced the best match. Fortunately, this package provides a optimisation method to mathematically propose the most valuable point to simulate in each iteration, reducing the covergence period. 
    
 ## Introduction to Bayesian Optimisation
 The core idea of bayesian optimisation is that it improves prediction posteriorly, based on prior measurements the program simulated. It is applied to the problems where fully parametrised the black box function is computing-expensice, and baysian optimisation evaluates the function adaptively with the proposal of measurements. The goal is to determine the parameter set returned the near-optimal objectives after a number of evaluations. The full bayesian process are operated from two main functions and can be illustrated by the following flow chart:
@@ -38,11 +38,7 @@ Fortunately, this integral can be solved analytically by changing variable $z_{0
 However, even in 9 dimensions, performing optimisation searches in the acquisition is a pain. Traditionally, in this classical method, BoTorch will take a few inital points randomly and gradually climbed up from the analytic gradients until maximum is found.
 
 In the SingleGP case, which is used in this package, the hyperparameters such as length scale (l) to control the covariance, or the noise level under the covariance matrix, are masimised under marginalised likelihood (p). The marginal likelihood measures how well the observed data are explained by the GP model after integrating over all possible latent functions consistent with the prior defined by the kernel hyperparameters. Each latent function is just a fancy name of the values drawing from a GP. Formally, for fixed hyperparameters $\theta$ the marginal likelihood is
-$$
-p(\mathbf{\chi^2} \mid X, \theta)
-=
-\int p(\mathbf{\chi^2} \mid \mathbf{f}) \, p(\mathbf{f} \mid X, \theta)\, d\mathbf{f}
-$$   
+$$\int p(\chi^2 \mid \mathbf{f}) p(\mathbf{f} \mid X, \theta) \, d\mathbf{f}$$
 Luckliy, it has a closed form and can be remormulated by kernel
 $$log(p(\chi^2 | X,\theta  ))=-\frac{1}{2}(\chi^2)^{T}(K+\sigma^2I)^{-1}(\chi^2)-\frac{1}{2}log(| K +\sigma^2I|)-\frac{n}{2}log(2\pi)$$
 The best hyperparameters set is chosen by maximising this marginal likelihood by gradient optimser.
