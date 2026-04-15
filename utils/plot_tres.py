@@ -32,11 +32,11 @@ def time_residual_agreement(data, model, iter, pars):
         return distro, cdf
     
     # find the parameter values used
-    parameter_names    = ["T1", "T2", "T3", "T4", "TR", "A1", "A2", "A3", "A4"]
+    parameter_names    = ["T1", "T2", "T3", "T4", "TR", "A1", "A2", "A3", "A4","LABRT","PPORT"]
     names              = parameter_names
     fig, axes = plt.subplots(nrows = 1, ncols = 3, figsize = (15, 5))
     binning = np.arange(-5, 350, 1)
-    values      = [pars[0], pars[1],pars[2],pars[3],pars[4],pars[5],pars[6],pars[7],pars[8]]
+    values      = [pars[0], pars[1],pars[2],pars[3],pars[4],pars[5],pars[6],pars[7],pars[8],pars[9],pars[10]]
     first_line = " | ".join(
         f"{names[i]}: {values[i]:.3f}" for i in range(2)
     )
@@ -49,9 +49,12 @@ def time_residual_agreement(data, model, iter, pars):
     fourth_line = " | ".join(
         f"{names[i]}: {values[i]:.3f}" for i in range(7,9)
     )
+    fifth_line = " | ".join(
+        f"{names[i]}: {values[i]:.3f}" for i in range(9,11)
+    )
     
 
-    label_text = first_line + "\n" + second_line + "\n" + third_line + "\n" + fourth_line
+    label_text = first_line + "\n" + second_line + "\n" + third_line + "\n" + fourth_line + "\n" + fifth_line
 
     axes[0].plot([], [], linestyle="", label=label_text)
     axes[1].plot([], [], linestyle="", label=label_text)
@@ -103,7 +106,7 @@ def time_residual_agreement(data, model, iter, pars):
     os.makedirs(f"results/plots/{iter}", exist_ok=True)
     plt.savefig(f"results/plots/{iter}/tres_comparison_{iter}.png")
     plt.close()
-def threetime_residual_agreement(data, model1,model2):
+def threetime_residual_agreement(data, model1,model2,label1,label2):
     print("In time_residual_agreement plotting...")
     """
     Function makes a 2 subplot plot showing the binned tRes distributions between data and MC
@@ -113,30 +116,39 @@ def threetime_residual_agreement(data, model1,model2):
     """
 
     # find the parameter values used
-    parameter_names    = ["T1", "T2", "T3", "T4", "TR", "A1", "A2", "A3", "A4"]
+    parameter_names    = ["T1", "T2", "T3", "T4", "TR", "A1", "A2", "A3", "A4","LABRT","PPORT"]
     names              = parameter_names
     fig, axes = plt.subplots(nrows = 1, ncols = 2, figsize = (12, 6))
     binning = np.arange(-5, 350, 1)
     
     
     axes[0].hist(data, bins = binning, density = True, histtype = "step", color = "black", linewidth = 2, label = "data")
-    axes[0].hist(model1, bins = binning, density = True, histtype = "step", color = "red", linewidth = 2, label = "MC-bayesian")
-    axes[0].hist(model2, bins = binning, density = True, histtype = "step", color = "blue", linewidth = 2, label = "MC-gridscan")
+    axes[0].hist(model1, bins = binning, density = True, histtype = "step", color = "red", linewidth = 2, label = label1)
+    axes[0].hist(model2, bins = binning, density = True, histtype = "step", color = "blue", linewidth = 2, label = label2)
     
     axes[0].set_xlim((-5, 100))
     axes[0].set_xlabel("Time Residual [ns]")
     axes[0].legend(loc="upper right")
 
     axes[1].hist(data, bins = binning, density = True, histtype = "step", color = "black", linewidth = 2, label = "data")
-    axes[1].hist(model1, bins = binning, density = True, histtype = "step", color = "red", linewidth = 2, label = "MC-bayesian")
-    axes[1].hist(model2, bins = binning, density = True, histtype = "step", color = "blue", linewidth = 2, label = "MC-gridscan")
+    axes[1].hist(model1, bins = binning, density = True, histtype = "step", color = "red", linewidth = 2, label = label1)
+    axes[1].hist(model2, bins = binning, density = True, histtype = "step", color = "blue", linewidth = 2, label = label2)
     axes[1].set_yscale("log")
     axes[1].set_xlabel("Time Residual [ns]")
     axes[1].legend(loc="upper right")
 
-
+    #ITR calculation
+    def ITR(data,type="data"):
+        arrdata = np.array(data) 
+        low = -2.5; high = 5.
+        mask = (arrdata >= low) & (arrdata <= high)
+        count_in_range = float(np.sum(mask))
+        total_count = float(len(data))
+        print(f"{type} ITR: {count_in_range/total_count}")
     
-    
+    ITR(data,"data")
+    ITR(model1,"label1")
+    ITR(model2,"label2")
     fig.tight_layout()
     os.makedirs(f"results/plots/", exist_ok=True)
     plt.savefig(f"results/plots/tres_comparison_gridscan_bay.png")

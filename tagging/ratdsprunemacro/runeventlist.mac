@@ -1,0 +1,48 @@
+# File: runeventlist.mac
+# Brief: Macro showing how to use the runeventlist processor.
+#
+# Date: 2023-02-03
+# Contact: M. Anderson, <anderson.mark@queensu.ca>
+# Revisions:
+#
+# This is a simple macro designed to illustrate the proper use of
+# the eventlist processor in processing only events in a list of
+# run and event ID pairs. The subset of events in input.root with runs
+# and GTIDs in RunIDfile.txt are saved to outputFile.root,
+# while any others are not.
+#
+# File should look like (GTIDs are not actually chosen from
+# the runs in this example):
+#
+# 300000,  100
+# 300000,  101
+# 300000,  102
+# 300010, 1000
+# 300010, 1001
+# ...
+
+/rat/inroot/load {IN}.root
+
+/run/initialize
+
+# BEGIN EVENT LOOP
+
+# processors that are to be run no matter what:
+/rat/proc count
+/rat/procset update 1000
+
+/rat/proc/if runeventlist
+
+    /rat/procset file "{GRID}.txt"
+
+    # processors to be run on an event only if its ID is in "RunIDfile.txt":
+    /rat/proclast outroot
+    /rat/procset file "{OUT}.root"
+
+/rat/proc/endif
+
+# END EVENT LOOP
+
+/rat/inroot/read
+
+exit

@@ -26,6 +26,8 @@ def surrogate_uncert_acquistion(mean, uncertainty, acquisition, meshX, meshY, na
         "6": "A2",
         "7": "A3",
         "8": "A4",
+        "9": "LABRT",
+        "10": "PPORT",
     } 
     par1_name = par_name[str(name_2D[0])]; par2_name = par_name[str(name_2D[1])]
 

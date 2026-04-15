@@ -19,7 +19,7 @@
 /rat/db/set OPTICS[${MATERIAL}] SCINTWAVEFORMalpha_value1 [-${T1}, -${T2}, -${T3}, -${T4}]
 /rat/db/set OPTICS[${MATERIAL}] SCINTWAVEFORMalpha_value2 [${A1}, ${A2}, ${A3}, ${A4}]
 /rat/db/set OPTICS[${MATERIAL}] SCINT_RISE_TIMEalpha ${TR}
-/rat/db/set OPTICS[${MATERIAL}] REEMITWAVEFORM2_value1 [-2.2,]
+/rat/db/set OPTICS[${MATERIAL}] REEMITWAVEFORM2_value1 [-${RT},]
 
 /rat/db/set MC thin_factor 3.0
 #To simulate noise using the per-pmt rates:
