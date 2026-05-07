@@ -1,19 +1,18 @@
-import sys
-sys.path.insert(0, "/home/huangp/pytor_bayesian_opti")
-from utils.plot_tres import threetime_residual_agreement
-from PlottingStyle.SNOplus_PythonPublicationStyle import SNOplus_style
 import rat
 from ROOT import RAT
 import numpy as np
+import os
+import sys
+import  argparse
+def extract_residuals(input_pattern, particletype):
 
-def extract_residuals(ratdsdir,particletype: str):
     """
     Calculates the time residuals from a given round of simulation .root files.
     """
 
     time_residuals = []
     counter        = 0 
-    for ientry, _ in rat.dsreader(f"{ratdsdir}/*.root"):
+    for ientry, _ in rat.dsreader(f"{input_pattern}/*.root"):
 
         # setup time residual calculator and point3d classes to handle AV offset
         PMTCalStatus = RAT.DU.Utility.Get().GetPMTCalStatus()
@@ -62,11 +61,8 @@ def extract_residuals(ratdsdir,particletype: str):
         elif particletype == "Bi214":
             if reconEnergy < 1.25 or reconEnergy > 3.00:
                 continue
-        elif particletype == "Po214":
-            if reconEnergy < 0.7 or reconEnergy > 1.1:
-                continue
         else:
-            print(f"Wrong input Particle Type {particletype} in extract_residuals(). Should be either Bi210 or Bi214 or Po214")
+            print(f"Wrong input Particle Type {particletype} in extract_residuals()")
             exit(1)
 
         # event has passed all the cuts so we can extract the time residuals
@@ -92,23 +88,39 @@ def extract_residuals(ratdsdir,particletype: str):
         if counter % 100 == 0:
             print("COMPLETED {} / {}".format(counter, 5000))
 
-    return time_residuals
+    return np.array(time_residuals)
 
-    
+
 if __name__ == "__main__":
-    SNOplus_style()
-    #data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_bi_4000.0.npy", allow_pickle = True)
-    #bay_res = extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi214Trial2/bestparratds","Bi214")
-    #gridscan_res= extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi214Trial2/gridscanparratds","Bi214")
-    #data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_po_4000.0.npy", allow_pickle = True)
-    #bay_res = extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Po214Trial1/bestparratds","Po214")
-    #gridscan_res= extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Po214Trial1/gridscanparratds","Po214")
-    #data_residuals = np.load("/data/snoplus3/weiii/BiPo210/rat-8.0.1/bismsb/ratds/Bi210.npy", allow_pickle = True)
-    #bay_res = extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/bismsbBi210Trial4/parformBi210","Bi210")
-    #gridscan_res= extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/bismsbBi210Trial4/parfromBi214gridscan","Bi210")
-    data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_bi_4000.0.npy", allow_pickle = True)
-    bay_res = extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi214DiffTiming/parfrombismsbBi210Trial4/","Bi214")
-    gridscan_res= extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi214DiffTiming/standard/","Bi214")
+    parser = argparse.ArgumentParser(description="Extract time residuals from SNO+ ROOT files and save as Numpy.")
+    
+    parser.add_argument("-i", "--input", type=str, required=True,
+                        help="Input path pattern (e.g., '/data/snoplus/*.root'). Wrap in quotes if using wildcards.")
+    
+    parser.add_argument("-o", "--output", type=str, required=True,
+                        help="Output path for the .npy file (e.g., ./output.npy).")
+    
+    parser.add_argument("-p", "--particle", type=str, choices=["Bi210", "Bi214"], required=True,
+                        help="Particle type to filter for: Bi210 or Bi214")
 
+    args = parser.parse_args()
 
-    threetime_residual_agreement(data_residuals, bay_res,gridscan_res, label1= "Parameters from Bi210", label2="Parameters from Optics Table")
+    # 2. Run Extraction using parsed arguments
+    results = extract_residuals(args.input, args.particle)
+
+    # 3. Save Output
+    if results is not None and len(results) > 0:
+        # Ensure directory exists
+        out_dir = os.path.dirname(args.output)
+        if out_dir and not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+
+        # Ensure .npy extension
+        final_output = args.output if args.output.endswith('.npy') else args.output + ".npy"
+
+        np.save(final_output, results)
+        print("-" * 30)
+        print(f"Success! Saved {len(results)} residuals to {final_output}")
+        print("-" * 30)
+    else:
+        print("No residuals found or error in processing.")

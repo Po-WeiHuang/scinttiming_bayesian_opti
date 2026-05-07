@@ -143,6 +143,7 @@ if __name__ == "__main__":
             "A2": float(candidate[0][6]),
             "A3": float(candidate[0][7]),
             "A4": float(candidate[0][8]),
+            "BISRT": float(candidate[0][9]),
         }
 
         merged_params = curr_params | new_params
@@ -150,7 +151,7 @@ if __name__ == "__main__":
         with open("currentparams.json", "w") as f:
             json.dump(merged_params, f, indent=2)
         if iteration > 1: # only plots surrogate/acquisition when measuing more than 1 point
-            subspace = [(0,1),(2,3),(0,4),(5,6),(7,8),(0,5),(1,6),(2,7),(3,8)]
+            subspace = [(0,1),(2,3),(0,4),(5,6),(7,8),(0,5),(1,6),(2,7),(3,8),(4,9),(0,9)]
             for projection_dim in subspace:
                 mean, sigma, acq, xx, yy = get_mean_sigma_EI_frombestAcq_2Dprojection(bounds,gp,candidate,logEI,proj_dim=projection_dim)
                 measured_points_subspace = np.column_stack((train_X[:,projection_dim[0]],train_X[:,projection_dim[1]]))

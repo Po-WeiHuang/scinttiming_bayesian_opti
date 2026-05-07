@@ -74,7 +74,7 @@ if __name__ == "__main__":
         # define covergence if
         # compared the minimum of chi2
         # other 3 points whose
-        # chi2_min < 1500 +
+        # chi2_min < 1100 +
         # t1,A1 are within 5%
         chi2_min = train_sort[0,-2]
         print("chi2_min ",chi2_min)
@@ -84,14 +84,16 @@ if __name__ == "__main__":
         epsilon = 10e-6
         iterations = int(np.max(train_sort[:,-3]))
 
-        if iterations <= 5 or chi2_min > 1500: pass
+        if iterations <= 5 or chi2_min > 1100: pass
         else:
             shift = np.abs(par_chi2small - best_par)/(best_par+epsilon)
             #print(shift)
             outlog.write(f"\nPercentage shift:{shift}")
             shift_t1A1 = shift[:,[0,5]]  
+            shift_t2A2 = shift[:,[1,6]] 
+            shift_trRT = shift[:,[4,9]] 
             #print(shift_t1A1)
-            all_True = np.all(shift_t1A1 <= 0.05) 
+            all_True = np.all((shift_t1A1 <= 0.03) & (shift_t2A2 <= 0.05) & (shift_trRT <= 0.05)) 
 
 
         print("iterations ",iterations)

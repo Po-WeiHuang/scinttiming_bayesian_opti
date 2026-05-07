@@ -14,6 +14,9 @@ def create_macro(params, name, particletype):
     if particletype == "Bi214":
         with open("macros/bi214_template.mac", "r") as infile:
             raw_text = string.Template(infile.read())
+    elif particletype == "Bi210":
+        with open("macros/bi210_template.mac", "r") as infile:
+            raw_text = string.Template(infile.read())
     elif particletype == "Po214":
         with open("macros/po214_template.mac", "r") as infile:
             raw_text = string.Template(infile.read())
@@ -23,10 +26,13 @@ def create_macro(params, name, particletype):
     
     #output_text = raw_text.substitute(MATERIAL = "labppo_2p2_scintillator", T1 = params["T1"], T2 = params["T2"],
     #                                  T3 = params["T3"], T4 = params["T4"], TR = params["TR"], A1 = params["A1"],
-    #                                  A2 = params["A2"], A3 = params["A3"], A4 = params["A4"])
-    output_text = raw_text.substitute(MATERIAL = "labppo_2p2_bismsb_scintillator", T1 = params["T1"], T2 = params["T2"],
+    #                                  A2 = params["A2"], A3 = params["A3"], A4 = params["A4"], LABRT = params["LABRT"], PPORT = params["PPORT"])
+    #output_text = raw_text.substitute(MATERIAL = "labppo_2p2_bismsb_scintillator", T1 = params["T1"], T2 = params["T2"],
+    #                                  T3 = params["T3"], T4 = params["T4"], TR = params["TR"], A1 = params["A1"],
+    #                                  A2 = params["A2"], A3 = params["A3"], A4 = params["A4"], BISRT = params["BISRT"])
+    output_text = raw_text.substitute(MATERIAL = "labppo_2p2_bismsb_2p2_scintillator", T1 = params["T1"], T2 = params["T2"],
                                       T3 = params["T3"], T4 = params["T4"], TR = params["TR"], A1 = params["A1"],
-                                      A2 = params["A2"], A3 = params["A3"], A4 = params["A4"])
+                                      A2 = params["A2"], A3 = params["A3"], A4 = params["A4"], BISRT = params["BISRT"])
 
     with open(f"results/macros/{name}.mac", "w") as outfile:
         outfile.write(output_text)
@@ -42,7 +48,7 @@ def create_macro(params, name, particletype):
         error      = results/condor_logs/sim_errors/$(ClusterId)_$(Process).err
         priority   = 5
         request_memory = 1024MB
-        queue 20
+        queue 80
         """.format(MAC_NAME = f"{name}"))
 if __name__ == "__main__":
 

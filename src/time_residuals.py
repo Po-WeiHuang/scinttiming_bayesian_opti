@@ -59,7 +59,11 @@ def extract_residuals(particletype: str):
         event_point.SetCoordinateSystem(psup_system_id)
 
         # apply energy tagging cuts the same as that in data
-        if particletype == "Bi214":
+        
+        if particletype == "Bi210":
+            if reconEnergy < 0.7 or reconEnergy > 1.1:
+                continue
+        elif particletype == "Bi214":
             if reconEnergy < 1.25 or reconEnergy > 3.00:
                 continue
         elif particletype == "Po214":
@@ -68,7 +72,7 @@ def extract_residuals(particletype: str):
         else:
             print(f"Wrong input Particle Type {particletype} in extract_residuals(). Should be either Bi214 or Po214")
             exit(1)
-
+        
         # event has passed all the cuts so we can extract the time residuals
         calibratedPMTs = reconEvent.GetCalPMTs()
         pmtCalStatus = rat.utility().GetPMTCalStatus()
@@ -107,10 +111,14 @@ def cal_objective(particletype: str):
         print(f"\nExtracted simulated residuals.")
 
         # load up the data residuals to compare to
-        if particletype == "Bi214":
+        if particletype == "Bi210":
+            print("Loading Bi210 tres data")
+            outlog.write("Loading Bi210 tres data")
+            data_residuals = np.load("/data/snoplus3/weiii/BiPo210/rat-8.0.1/bismsb/ratds/Bi210.npy", allow_pickle = True)
+        elif particletype == "Bi214":
             print("Loading Bi214 tres data")
             outlog.write("Loading Bi214 tres data")
-            data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_bi_4000.0.npy", allow_pickle = True)
+            data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/residuals_801/Bi214FV4000.npy", allow_pickle = True)
         elif particletype == "Po214":
             print("Loading Po214 tres data")
             outlog.write("Loading Bi214 tres data")
@@ -142,10 +150,14 @@ def cal_objective(particletype: str):
         # normalise the MC to the counts in the data
         int_dat = np.sum(binned_data)
         print("Data normalisation is: ", int_dat)
-        scale= int_dat/np.sum(binned_sim)
+        outlog.write(f"\nData normalisation is:  {int_dat}")
+        binned_data = binned_data/int_dat; binned_data_sigma = binned_data_sigma/int_dat 
+        int_mc= np.sum(binned_sim)
         print("Before normalisation: MC normalisation is: ", np.sum(binned_sim))
-        binned_sim = (binned_sim * scale) ; binned_sim_sigma =  binned_sim_sigma*scale
+        outlog.write(f"Before normalisation: MC normalisation is: {np.sum(binned_sim)}")
+        binned_sim = (binned_sim / int_mc) ; binned_sim_sigma =  binned_sim_sigma/int_mc
         print("After normalisation: MC normalisation is: ", np.sum(binned_sim))
+        outlog.write(f"After normalisation: MC normalisation is: {np.sum(binned_sim)}")
 
     
     # using the new objective which is the sum of the squared residuals only
