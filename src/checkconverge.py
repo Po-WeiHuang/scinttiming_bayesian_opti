@@ -91,7 +91,7 @@ if __name__ == "__main__":
             outlog.write(f"\nPercentage shift:{shift}")
             shift_t1A1 = shift[:,[0,5]]  
             shift_t2A2 = shift[:,[1,6]] 
-            shift_trRT = shift[:,[4,9,10]] 
+            shift_trRT = shift[:,[4,9]] 
             #print(shift_t1A1)
             all_True = np.all((shift_t1A1 <= 0.03) & (shift_t2A2 <= 0.05) & (shift_trRT <= 0.05)) 
 

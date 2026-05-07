@@ -1,6 +1,7 @@
 import sys
 sys.path.insert(0, "/home/huangp/pytor_bayesian_opti")
 from utils.plot_tres import threetime_residual_agreement
+from PlottingStyle.SNOplus_PythonPublicationStyle import SNOplus_style
 import rat
 from ROOT import RAT
 import numpy as np
@@ -95,18 +96,19 @@ def extract_residuals(ratdsdir,particletype: str):
 
     
 if __name__ == "__main__":
+    SNOplus_style()
     #data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_bi_4000.0.npy", allow_pickle = True)
     #bay_res = extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi214Trial2/bestparratds","Bi214")
     #gridscan_res= extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi214Trial2/gridscanparratds","Bi214")
     #data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_po_4000.0.npy", allow_pickle = True)
     #bay_res = extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Po214Trial1/bestparratds","Po214")
     #gridscan_res= extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Po214Trial1/gridscanparratds","Po214")
-    data_residuals = np.load("/data/snoplus3/weiii/BiPo210/rat-8.0.1/bismsb/ratds/Bi210.npy", allow_pickle = True)
-    bay_res = extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi210Trial3/parfromBi210","Bi210")
-    gridscan_res= extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi210Trial3/parfromBi214gridscan","Bi210")
-    #data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_bi_4000.0.npy", allow_pickle = True)
-    #bay_res = extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi214Trial2/bestparratds/","Bi214")
-    #gridscan_res= extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi214DiffTiming/parfromBi210/","Bi214")
+    #data_residuals = np.load("/data/snoplus3/weiii/BiPo210/rat-8.0.1/bismsb/ratds/Bi210.npy", allow_pickle = True)
+    #bay_res = extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/bismsbBi210Trial4/parformBi210","Bi210")
+    #gridscan_res= extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/bismsbBi210Trial4/parfromBi214gridscan","Bi210")
+    data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_bi_4000.0.npy", allow_pickle = True)
+    bay_res = extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi214DiffTiming/parfrombismsbBi210Trial4/","Bi214")
+    gridscan_res= extract_residuals("/data/snoplus2/weiiiii/pytor_bayesian_opti/Bi214DiffTiming/standard/","Bi214")
 
 
-    threetime_residual_agreement(data_residuals, bay_res,gridscan_res, label1= "Parameters from Bi210", label2="Parameters from Bi214")
+    threetime_residual_agreement(data_residuals, bay_res,gridscan_res, label1= "Parameters from Bi210", label2="Parameters from Optics Table")
