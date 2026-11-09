@@ -136,16 +136,36 @@ def extract_residuals_extntuple(run, particletype):
         print("TChain has zero entries after adding files.")
         return []
 
-    # Setup database and utilities
-    db = RAT.DB().Get()
-    db.BeginOfRun(run)
+    # Setup database and utilities.
+    # A TChain does not apply the simulation macro's /rat/db/set commands (rat.dsreader does), so
+    # GEO[inner_av].material would stay at the default "labppo_scintillator" and the time-residual
+    # calculator would use that material's effective velocity. Load the macro's DB commands from the
+    # file's meta, as RAT::DU::DSReader does, before Utility::BeginOfRun() caches the velocity.
+    db = RAT.DB.Get()
     db.LoadDefaults()
-    db.Load("/home/huangp/fresh_rat/rat/data/geo/snoplusnative.geo")
-    db.Load("/home/huangp/fresh_rat/rat/data/pmt/PMTINFO_sept2018.ratdb")
+    meta_file = ROOT.TFile.Open(file_list[0])
+    meta = meta_file.Get("meta")
+    if not meta:
+        raise RuntimeError(f"No 'meta' object in {file_list[0]}; cannot recover the simulation DB settings.")
+    RAT.DBCommandLoader.LoadCommands(meta)
+    meta_file.Close()
+
+    ds_run = RAT.DS.Run()
+    ds_run.SetRunID(int(run))
+    db.BeginOfRun(ds_run)
+    ratroot = os.environ["RATROOT"]
+    db.Load(f"{ratroot}/data/geo/snoplusnative.geo")
+    db.Load(f"{ratroot}/data/pmt/PMTINFO_sept2018.ratdb")
 
     utility = rat.utility().Get()
     utility.BeginOfRun()
     db.EndOfBeginOfRun()
+
+    material = db.GetLink("GEO", "inner_av").GetS("material")
+    inner_av_velocity = rat.utility().GetEffectiveVelocity().GetInnerAVVelocity(2000.0)
+    print(f"Run {run}: GEO[inner_av].material = {material}, inner-AV effective velocity (r=2 m) = {inner_av_velocity:.4f} mm/ns")
+    with open("algo_log.txt", "a") as outlog:
+        outlog.write(f"\ntres calculator: material={material}, v_innerAV(r=2m)={inner_av_velocity:.4f} mm/ns")
 
     psup_system_id = RAT.DU.Point3D.GetSystemId("innerPMT")
     tres_calc = rat.utility().GetTimeResidualCalculator()
