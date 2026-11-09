@@ -5,8 +5,8 @@ MACRO_NAME=$2
 RUNID=$3
 echo "######### In SIMULATION PROCESS #########" >> algo_log.txt
 
-#source /home/huangp/rat7015/rat/wei_env_Will.sh
-source /home/huangp/fresh_rat/rat/wei_env_Will.sh
+#source /home/huangp/fresh_rat/rat/wei_env_Will.sh
+source /data/snoplus/software/snocave_Alma9/set_env.sh
 source /data/snoplus3/weiii/botorch_venv/bin/activate
 #rm -rf /data/snoplus2/weiiiii/pytor_bayesian_opti/*.root
 
