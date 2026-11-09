@@ -1,15 +1,17 @@
 import numpy as np
 import rat
+import ROOT
 from ROOT import RAT
 import json
 import os
 import rat
+import glob
 from datetime import datetime
 import sys
 sys.path.insert(0, "/home/huangp/pytor_bayesian_opti")
 from utils.plot_tres import time_residual_agreement
 
-def extract_residuals(particletype: str):
+def extract_residuals_ratds(particletype: str):
     """
     Calculates the time residuals from a given round of simulation .root files.
     """
@@ -21,7 +23,8 @@ def extract_residuals(particletype: str):
         # setup time residual calculator and point3d classes to handle AV offset
         PMTCalStatus = RAT.DU.Utility.Get().GetPMTCalStatus()
         light_path = rat.utility().GetLightPathCalculator()
-        group_velocity = rat.utility().GetGroupVelocity()
+        effective_velocity = rat.utility().GetEffectiveVelocity()
+        #group_velocity = rat.utility().GetGroupVelocity()
         pmt_info = rat.utility().GetPMTInfo()
         psup_system_id = RAT.DU.Point3D.GetSystemId("innerPMT")
         av_system_id = RAT.DU.Point3D.GetSystemId("av")
@@ -87,7 +90,8 @@ def extract_residuals(particletype: str):
             inner_av_distance = light_path.GetDistInInnerAV()
             av_distance = light_path.GetDistInAV()
             water_distance = light_path.GetDistInWater()
-            transit_time = group_velocity.CalcByDistance(inner_av_distance, av_distance, water_distance)
+            #transit_time = group_velocity.CalcByDistance(inner_av_distance, av_distance, water_distance)
+            transit_time = effective_velocity.CalcByDistance(inner_av_distance, av_distance, water_distance)
             residual_recon = pmt.GetTime() - transit_time - reconEventTime
             
             time_residuals.append(residual_recon)
@@ -95,6 +99,97 @@ def extract_residuals(particletype: str):
         counter += 1
         if counter % 100 == 0:
             print("COMPLETED {} / {}".format(counter, 5000))
+
+    return time_residuals
+
+ENERGY_CUTS = {
+    "Bi210": (0.7, 1.1),
+    "Bi214": (1.25, 3.0),
+    "Po214": (0.7, 1.1),
+}
+
+
+def extract_residuals_extntuple(run, particletype):
+    
+    if particletype not in ENERGY_CUTS:
+        raise ValueError(
+            f"Wrong input Particle Type {particletype} in extract_residuals(). "
+            "Should be either Bi210, Bi214, or Po214."
+        )
+
+    emin, emax = ENERGY_CUTS[particletype]
+    time_residuals = []
+
+    # Build file pattern from directory + run number
+    file_pattern = "/data/snoplus2/weiiiii/pytor_bayesian_opti/*ntuple.root"
+    file_list = sorted(glob.glob(file_pattern))
+
+    if not file_list:
+        print(f"No ROOT files found for pattern: {file_pattern}")
+        return []
+
+    chain = ROOT.TChain("output")
+    for f in file_list:
+        chain.Add(f)
+
+    if chain.GetEntries() == 0:
+        print("TChain has zero entries after adding files.")
+        return []
+
+    # Setup database and utilities
+    db = RAT.DB().Get()
+    db.BeginOfRun(run)
+    db.LoadDefaults()
+    db.Load("/home/huangp/fresh_rat/rat/data/geo/snoplusnative.geo")
+    db.Load("/home/huangp/fresh_rat/rat/data/pmt/PMTINFO_sept2018.ratdb")
+
+    utility = rat.utility().Get()
+    utility.BeginOfRun()
+    db.EndOfBeginOfRun()
+
+    psup_system_id = RAT.DU.Point3D.GetSystemId("innerPMT")
+    tres_calc = rat.utility().GetTimeResidualCalculator()
+    chan_status = rat.utility().GetPMTCalStatus()
+
+    for iEntry in range(chain.GetEntries()):
+        chain.GetEntry(iEntry)
+
+        if not hasattr(chain, "fitValid") or int(chain.fitValid) != 1:
+            continue
+        if not hasattr(chain, "evIndex") or int(chain.evIndex) != 0:
+            continue
+
+        if hasattr(chain, "energy"):
+            reco_energy = float(chain.energy)
+        elif hasattr(chain, "reconEnergy"):
+            reco_energy = float(chain.reconEnergy)
+        elif hasattr(chain, "fitEnergy"):
+            reco_energy = float(chain.fitEnergy)
+        else:
+            raise AttributeError(
+                "Could not find an energy branch in the chain. "
+                "Tried: energy, reconEnergy, fitEnergy"
+            )
+
+        if reco_energy < emin or reco_energy > emax:
+            continue
+
+        hittimes = chain.hittimes
+        hitids = chain.hitids
+
+        event_position = ROOT.TVector3(chain.posx, chain.posy, chain.posz)
+        event_point = RAT.DU.Point3D(psup_system_id, event_position)
+        t = chain.time
+
+        for iPMT in range(len(hittimes)):
+            pmttime = hittimes[iPMT]
+            pmtid = hitids[iPMT]
+
+            #if chan_status.GetChannelStatus(pmtid) < 1.0:
+            #    continue
+
+            tres = tres_calc.CalcTimeResidual(pmtid, pmttime, event_point, t)
+            time_residuals.append(tres)
 
     return time_residuals
 
@@ -106,7 +201,7 @@ def cal_objective(particletype: str):
 
         with open("paramsbound.json", "r") as f:
             boundparams = json.load(f)
-        time_residuals = extract_residuals(boundparams["Type"])
+        time_residuals = extract_residuals_extntuple(boundparams["RunID"], boundparams["Type"])
 
         print(f"\nExtracted simulated residuals.")
 
@@ -118,11 +213,13 @@ def cal_objective(particletype: str):
         elif particletype == "Bi214":
             print("Loading Bi214 tres data")
             outlog.write("Loading Bi214 tres data")
-            data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/residuals_801/Bi214FV4000.npy", allow_pickle = True)
+            data_residuals = np.load("/data/snoplus3/weiii/BiPo214/rat-8.2.0/bismsb/tresnpy/Bi214_354099_354139.npy", allow_pickle = True)
+            #data_residuals = np.load("/data/snoplus3/weiii/BiPo214/rat-8.2.0/ppo/data/Bi214_300000_300024.npy", allow_pickle = True)
         elif particletype == "Po214":
             print("Loading Po214 tres data")
-            outlog.write("Loading Bi214 tres data")
-            data_residuals = np.load("/data/snoplus2/weiiiii/BiPo214_tune_cleaning/detector_data/bismsb_batch4_po_4000.0.npy", allow_pickle = True)
+            outlog.write("Loading Po214 tres data")
+            data_residuals = np.load("/data/snoplus3/weiii/BiPo214/rat-8.2.0/bismsb/tresnpy/Po214_354099_354139.npy", allow_pickle = True)
+            #data_residuals = np.load("/data/snoplus3/weiii/BiPo214/rat-8.2.0/ppo/data/Po214_300000_300024.npy", allow_pickle = True)
         #data_residuals = np.concatenate(data_residuals)
 
         # create the binned histograms and calculate the chi2

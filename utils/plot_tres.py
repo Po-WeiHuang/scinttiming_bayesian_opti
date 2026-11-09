@@ -37,10 +37,11 @@ def time_residual_agreement(data, model, iter, pars):
     
     # find the parameter values used
     parameter_names    = ["T1", "T2", "T3", "T4", "TR", "A1", "A2", "A3", "A4","BISRT"]
+    #parameter_names    = ["T1", "T2", "T3", "T4", "TR", "A1", "A2", "A3", "A4"]
     names              = parameter_names
     
     binning = np.arange(-5, 350, 1)
-    values      = [pars[0], pars[1],pars[2],pars[3],pars[4],pars[5],pars[6],pars[7],pars[8],pars[9]]
+    values      = [pars[0], pars[1],pars[2],pars[3],pars[4],pars[5],pars[6],pars[7],pars[8]]
     first_line = " | ".join(
         f"{names[i]}: {values[i]:.3f}" for i in range(2)
     )
@@ -54,7 +55,7 @@ def time_residual_agreement(data, model, iter, pars):
         f"{names[i]}: {values[i]:.3f}" for i in range(7,9)
     )
     fifth_line = " | ".join(
-        f"{names[i]}: {values[i]:.3f}" for i in [4,9]
+        f"{names[i]}: {values[i]:.3f}" for i in [4]
     )
     
     label_text = first_line + "\n" + second_line + "\n" + third_line + "\n" + fourth_line + "\n" + fifth_line
@@ -109,6 +110,7 @@ def time_residual_agreement(data, model, iter, pars):
         sharex=True,
         gridspec_kw={'height_ratios': [3, 1], 'hspace': 0.0},
     )
+    ax_lin_top.text(0.75, 0.75, 'SNO+ Preliminary', transform=ax_lin_top.transAxes, va='top', fontsize=18)
     #print(counts_data[mask][:25])
     #print(counts_data[mask][-25:])
     #print(np.sqrt(counts_data[mask][:25]))
@@ -165,6 +167,7 @@ def time_residual_agreement(data, model, iter, pars):
         sharex=True,
         gridspec_kw={'height_ratios': [3, 1], 'hspace': 0.0},
     )
+    ax_log_top.text(0.75, 0.75, 'SNO+ Preliminary', transform=ax_log_top.transAxes, va='top', fontsize=18)
     
     #ax_log_top.plot([], [], linestyle="", label=label_text)
     ax_log_top.plot([], [], linestyle="")
@@ -206,7 +209,7 @@ def time_residual_agreement(data, model, iter, pars):
     os.makedirs(f"results/plots/{iter}", exist_ok=True)
     plt.savefig(f"results/plots/{iter}/tres_comparison_{iter}_log.png")
     plt.close()
-def threetime_residual_agreement(data, model1,model2,label1,label2):
+def threetime_residual_agreement(data, model1,model2,label0,label1,label2):
     print("In time_residual_agreement plotting...")
     SNOplus_style()
     """
@@ -294,6 +297,7 @@ def threetime_residual_agreement(data, model1,model2,label1,label2):
         sharex=True,
         gridspec_kw={'height_ratios': [3, 1], 'hspace': 0.0},
     )
+    ax_lin_top.text(0.35, 0.95, 'SNO+ Preliminary', transform=ax_lin_top.transAxes, va='top', fontsize=18)
    
     ax_lin_top.errorbar(
         bin_centers[mask],
@@ -302,7 +306,7 @@ def threetime_residual_agreement(data, model1,model2,label1,label2):
         fmt='o',
         color='black',
         linewidth=2,
-        label='data',
+        label=label0,
         capsize=2,
     )
     ax_lin_top.hist(model1, bins=binning, weights=np.ones_like(model1, dtype=float) / total_model1, histtype="step", color="red", linewidth=2, label=label1)
@@ -336,6 +340,7 @@ def threetime_residual_agreement(data, model1,model2,label1,label2):
         sharex=True,
         gridspec_kw={'height_ratios': [3, 1], 'hspace': 0.0},
     )
+    ax_log_top.text(0.35, 0.95, 'SNO+ Preliminary', transform=ax_log_top.transAxes, va='top', fontsize=18)
     
     ax_log_top.errorbar(
         bin_centers[mask],

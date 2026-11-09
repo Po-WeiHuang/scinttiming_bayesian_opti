@@ -8,7 +8,7 @@
 #
 #  To run with duration rat -T 365:day
 #
-#      Bi214 internal background
+#      Po214 internal background
 #
 
 /rat/physics_list/OmitMuonicProcesses true
@@ -19,7 +19,7 @@
 /rat/db/set OPTICS[${MATERIAL}] SCINTWAVEFORMalpha_value1 [-${T1}, -${T2}, -${T3}, -${T4}]
 /rat/db/set OPTICS[${MATERIAL}] SCINTWAVEFORMalpha_value2 [${A1}, ${A2}, ${A3}, ${A4}]
 /rat/db/set OPTICS[${MATERIAL}] SCINT_RISE_TIMEalpha ${TR}
-/rat/db/set OPTICS[${MATERIAL}] REEMITWAVEFORM1_value1 [-1.2,]
+#/rat/db/set OPTICS[${MATERIAL}] REEMITWAVEFORM1_value1 [-1.2,]
 /rat/db/set OPTICS[${MATERIAL}] REEMITWAVEFORM2_value1 [-${BISRT},]
 
 /rat/db/set MC thin_factor 3.0
@@ -51,13 +51,13 @@
 /rat/procset update 10
 /rat/proc prune
 /rat/procset prune "mc.pmts,mc.hits,mcevs,ev.uncalPMTs,ev.intermedCalPMTs"
-/rat/proc outroot
-
+/rat/proc outntuple
+/rat/procset storeHits 1
 ##########EVENT LOOP############
 
 /generator/add combo decay0:fillshell:poisson
 /generator/vtx/set backg Po214
-/generator/pos/set 0 0 0 0 4500 inner_av av 
+/generator/pos/set 0 0 0 0 4000 inner_av av 
 
 /rat/run/start
 exit
