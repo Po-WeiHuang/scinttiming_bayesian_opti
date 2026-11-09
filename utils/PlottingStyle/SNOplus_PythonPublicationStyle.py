@@ -21,10 +21,11 @@ else:
 
 def SNOplus_style():
     """Apply the global rcParams for SNO+ publication style."""
-    matplotlib.rcParams.update({'font.size': 18})
+    matplotlib.rcParams.update({'font.size': 24})
     matplotlib.rcParams["font.family"] = "serif"
     matplotlib.rcParams["font.serif"] = [_FONT_NAME]
-    
+    matplotlib.rcParams["xaxis.labellocation"] = 'right'
+    matplotlib.rcParams["yaxis.labellocation"] = 'top' 
     # Global fix for the minus sign on linear axes
     matplotlib.rcParams['axes.unicode_minus'] = False
     
@@ -33,18 +34,18 @@ def SNOplus_style():
     matplotlib.rcParams['lines.linewidth'] = 2.5
     matplotlib.rcParams['patch.linewidth'] = 2.5
     matplotlib.rcParams['axes.labelsize'] = 22
-    matplotlib.rcParams['legend.fontsize'] = 18
+    matplotlib.rcParams['legend.fontsize'] = 20
     matplotlib.rcParams['legend.framealpha'] = 0
-    matplotlib.rcParams['xtick.labelsize'] = 16
-    matplotlib.rcParams['ytick.labelsize'] = 16
+    matplotlib.rcParams['xtick.labelsize'] = 20
+    matplotlib.rcParams['ytick.labelsize'] = 20
     matplotlib.rcParams['xtick.major.size'] = 8
-    matplotlib.rcParams['xtick.major.width'] = 1.5
+    matplotlib.rcParams['xtick.major.width'] = 1.6
     matplotlib.rcParams['xtick.minor.size'] = 6.4  
-    matplotlib.rcParams['xtick.minor.width'] = 0.8
+    matplotlib.rcParams['xtick.minor.width'] = 1.5
     matplotlib.rcParams['ytick.major.size'] = 8
-    matplotlib.rcParams['ytick.major.width'] = 1.5
+    matplotlib.rcParams['ytick.major.width'] = 1.6
     matplotlib.rcParams['ytick.minor.size'] = 4.0
-    matplotlib.rcParams['ytick.minor.width'] = 0.8
+    matplotlib.rcParams['ytick.minor.width'] = 1.5
     matplotlib.rcParams['axes.linewidth'] = 1.5
     matplotlib.rcParams['axes.labelpad'] = 10
     matplotlib.rcParams['figure.facecolor'] = 'white'

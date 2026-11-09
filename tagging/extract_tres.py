@@ -4,6 +4,7 @@ import numpy as np
 import os
 import sys
 import  argparse
+
 def extract_residuals(input_pattern, particletype):
 
     """
@@ -17,7 +18,8 @@ def extract_residuals(input_pattern, particletype):
         # setup time residual calculator and point3d classes to handle AV offset
         PMTCalStatus = RAT.DU.Utility.Get().GetPMTCalStatus()
         light_path = rat.utility().GetLightPathCalculator()
-        group_velocity = rat.utility().GetGroupVelocity()
+        effective_velocity = rat.utility().GetEffectiveVelocity()
+        #group_velocity = rat.utility().GetGroupVelocity()
         pmt_info = rat.utility().GetPMTInfo()
         psup_system_id = RAT.DU.Point3D.GetSystemId("innerPMT")
         av_system_id = RAT.DU.Point3D.GetSystemId("av")
@@ -61,6 +63,9 @@ def extract_residuals(input_pattern, particletype):
         elif particletype == "Bi214":
             if reconEnergy < 1.25 or reconEnergy > 3.00:
                 continue
+        elif particletype == "Po214":
+            if reconEnergy < 0.7 or reconEnergy > 1.1:
+                continue
         else:
             print(f"Wrong input Particle Type {particletype} in extract_residuals()")
             exit(1)
@@ -79,7 +84,8 @@ def extract_residuals(input_pattern, particletype):
             inner_av_distance = light_path.GetDistInInnerAV()
             av_distance = light_path.GetDistInAV()
             water_distance = light_path.GetDistInWater()
-            transit_time = group_velocity.CalcByDistance(inner_av_distance, av_distance, water_distance)
+            #transit_time = group_velocity.CalcByDistance(inner_av_distance, av_distance, water_distance)
+            transit_time = effective_velocity.CalcByDistance(inner_av_distance, av_distance, water_distance)
             residual_recon = pmt.GetTime() - transit_time - reconEventTime
             
             time_residuals.append(residual_recon)
@@ -100,8 +106,8 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", type=str, required=True,
                         help="Output path for the .npy file (e.g., ./output.npy).")
     
-    parser.add_argument("-p", "--particle", type=str, choices=["Bi210", "Bi214"], required=True,
-                        help="Particle type to filter for: Bi210 or Bi214")
+    parser.add_argument("-p", "--particle", type=str, choices=["Bi210", "Bi214", "Po214"], required=True,
+                        help="Particle type to filter for: Bi210, Bi214, or Po214")
 
     args = parser.parse_args()
 

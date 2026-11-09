@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import json
 import torch
+import os
 from botorch.models import SingleTaskGP
 from botorch.models.transforms import Normalize, Standardize
 from botorch.fit import fit_gpytorch_mll
@@ -87,7 +88,7 @@ if __name__ == "__main__":
         with open("paramsbound.json", "r") as f:
             params = json.load(f)
         
-        bounds = [(params[ikey]) for ikey in params if ikey!="Type"]
+        bounds = [(params[ikey]) for ikey in params if ikey!="Type" and ikey!="RunID"]
         print(bounds)
         
 
@@ -151,11 +152,12 @@ if __name__ == "__main__":
         with open("currentparams.json", "w") as f:
             json.dump(merged_params, f, indent=2)
         if iteration > 1: # only plots surrogate/acquisition when measuing more than 1 point
+            particle_type = params.get("Type", None)
             subspace = [(0,1),(2,3),(0,4),(5,6),(7,8),(0,5),(1,6),(2,7),(3,8),(4,9),(0,9)]
             for projection_dim in subspace:
                 mean, sigma, acq, xx, yy = get_mean_sigma_EI_frombestAcq_2Dprojection(bounds,gp,candidate,logEI,proj_dim=projection_dim)
                 measured_points_subspace = np.column_stack((train_X[:,projection_dim[0]],train_X[:,projection_dim[1]]))
-                surrogate_uncert_acquistion(mean, sigma, acq, xx, yy, projection_dim,iteration,measured_points_subspace)
-
+                surrogate_uncert_acquistion(mean, sigma, acq, xx, yy, projection_dim,iteration,measured_points_subspace, particle_type)
+            
         outlog.write("\n### END OF SELECT_PARAMETERS SCRIPT ###\n")
         

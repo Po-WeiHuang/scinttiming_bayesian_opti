@@ -1,5 +1,5 @@
 executable = executables/submit_simulations.sh
-arguments  = $(Process) ${MAC_NAME}
+arguments  = $(Process) ${MAC_NAME} ${Runid}
 priority   = 5
 log        = results/condor_logs/sim_logs/$(Process).log
 output     = results/condor_logs/sim_outputs/$(Process).out

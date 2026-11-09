@@ -4,9 +4,23 @@ import argparse
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor
 
-def process_single_run(filename, ntuple_dir, output_dir):
+
+PARTICLE_BRANCHES = {
+    "Bi214": {
+        "tree": "BiT",
+        "eventid": "Bi_eventid",
+    },
+    "Po214": {
+        "tree": "PoT",
+        "eventid": "Po_eventid",
+    },
+}
+
+def process_single_run(filename, ntuple_dir, output_dir, particletype):
     """Processes a single ROOT file to extract event IDs."""
     try:
+        branch_info = PARTICLE_BRANCHES[particletype]
+
         # 1. Construct full paths
         input_path = os.path.join(ntuple_dir, filename)
         
@@ -15,10 +29,10 @@ def process_single_run(filename, ntuple_dir, output_dir):
         run_id = filename.split('.')[0] 
         output_path = os.path.join(output_dir, f"{run_id}.txt")
 
-        # 3. Open ROOT and extract 'eventid' branch
+        # 3. Open ROOT and extract the particle-specific event ID branch
         with uproot.open(input_path+".ntuple.root") as f:
-            tree = f["DelayT"]
-            event_ids = tree["eventid"].array(library="np")
+            tree = f[branch_info["tree"]]
+            event_ids = tree[branch_info["eventid"]].array(library="np")
 
         # 4. Write to the output directory
         with open(output_path, 'w') as out:
@@ -35,6 +49,8 @@ def main():
     parser.add_argument("-r", required=True, help="Path to the text file containing filenames.")
     parser.add_argument("-n", required=True, help="Directory where the .root files are stored.")
     parser.add_argument("-o", required=True, help="Directory to save the resulting .txt files.")
+    parser.add_argument("-p", "--particle", required=True, choices=["Bi214", "Po214"],
+                        help="Particle type to select: Bi214 or Po214.")
     
     args = parser.parse_args()
 
@@ -52,7 +68,7 @@ def main():
     with ProcessPoolExecutor() as executor:
         # We pass the directory arguments to each function call using a list comprehension
         futures = [
-            executor.submit(process_single_run, fname, args.n, args.o) 
+            executor.submit(process_single_run, fname, args.n, args.o, args.particle) 
             for fname in filenames
         ]
         
