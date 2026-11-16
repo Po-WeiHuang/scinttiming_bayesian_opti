@@ -58,7 +58,7 @@
 
 /generator/add combo decay0:fillshell:poisson
 /generator/vtx/set backg Po214
-/generator/pos/set 0 0 0 0 4000 inner_av av 
+/generator/pos/set 0 0 0 0 4100 inner_av av 
 
 /rat/run/start
 exit

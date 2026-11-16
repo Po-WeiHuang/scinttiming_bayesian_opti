@@ -2,5 +2,5 @@
 
 source ${RATPATH}
 source ${VIRTPYTHONPATH}
-#cd /home/huangp/pytor_bayesian_opti
+export PYTHONPATH=${WORKINGDIR}:$$PYTHONPATH
 python3 src/select_parameters.py

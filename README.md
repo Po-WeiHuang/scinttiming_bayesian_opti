@@ -70,61 +70,123 @@ Hang on there. There is a sample method of posterior that might potentially be h
 
 
 ## Code Instruction
+### Python environment (`$BOVENV`)
+The venv lives on your data disk, not in the repository; torch with CUDA alone is several GB. Choose its location with the environment variable **`$BOVENV`**, and create it with **python3.9**, the python that RAT's ROOT is built for. Newer pythons won't load ROOT in the loop, and torch 2.8 / BoTorch 0.10 are the last releases for 3.9.
+
+```bash
+export BOVENV=/data/<your data disk>/<user>/botorch_venv   # pick your own path; add this line to ~/.bashrc to keep it
+
+/usr/bin/python3.9 -m venv $BOVENV
+source $BOVENV/bin/activate
+pip install --upgrade pip
+pip install -r /path/to/pytor_bayesian_opti/requirements.txt   # torch 2.8.0+cu128 comes from the PyTorch index listed in the file
+python -c "import torch, botorch, uproot; print(torch.__version__, torch.cuda.is_available(), botorch.__version__)"
+deactivate
+
+cd /path/to/pytor_bayesian_opti
+python initial.py --venv $BOVENV/bin/activate --yes   # point the loop scripts at this venv
+```
+
+The condor jobs don't need `$BOVENV` to be set: `initial.py` writes the full path of `$BOVENV/bin/activate` into `executables/*.sh`. `ROOT` and `rat` aren't pip packages: the loop scripts get them by sourcing the RAT env before the venv.
+
+### Initial setup (`initial.py`)
+Run once after creating the venv, and again whenever the RAT version, venv or simulation directory changes. `initial.py` writes `executables/*.sh` and `set_env.sh` from `executables_template/`, and creates the `results/` sub-directories:
+
+    python initial.py                                  # prompts; press Enter to keep each default
+    python initial.py --rat-version 8.3.2 --yes        # official env for RAT 8.3.2, defaults for the rest
+    python initial.py --rat-env <env.sh> --venv <venv>/bin/activate --sim-dir <dir> --nevents 120 --yes
+
+| Option | Default | What it sets |
+|---|---|---|
+| `--rat-version` or `--rat-env` | `/data/snoplus/software/snocave_Alma9/set_env.sh` (RAT 8.3.2) | RAT environment sourced by every script, simulation included. `--rat-version` picks the official snocave env script that loads that RAT. |
+| `--venv` | `$BOVENV/bin/activate` (if `$BOVENV` is unset: `/data/snoplus3/weiii/botorch_venv/bin/activate`) | Python venv with BoTorch |
+| `--sim-dir` | `/data/snoplus2/weiiiii/pytor_bayesian_opti` | Where the simulations are written, read by `time_residuals.py` and cleared by `delete_simulations.sh` |
+| `--nevents` | `120` | Events per simulation job |
+
+The run number is not an option: it comes from `RunID` in the optics config.
+
+### Requirements
 * Several external packages and libraries are required in advance:
-    * Virtual Python Environment with
+    * Virtual Python Environment (`python3.9`, matching the ROOT linked to RAT) with the packages in `requirements.txt`:
         * PyTorch >= 2.8.0+cu128
         * BoTorch >= 0.10.0
         * Matplotlib
-        * numpy
-    * RAT with dependencies
+        * numpy, uproot (plus scipy, tqdm)
+    * RAT 8.3.x. Every loop script sources the official environment `/data/snoplus/software/snocave_Alma9/set_env.sh` (RAT 8.3.2, ROOT 6.32.02).
     * HTCondor
-User should try to find the packages that is compatible with ROOT version linked with RAT. For example, in version of `7.0.15`, people should use `python3.9`. 
 
 ### Codes Structure
-There are two dag files in a nested structure. `training.dag` controls the submission subdag `opto.dag`, if the covergence has not been met. Inside the `opto.dag`, it will firstly run the simulation based on parameters values in `currentparams.json`, calculating $t_{res}$ from `src/time_residuals.py`, then proposing the next point from the execution of `src/select_parameters.py`. The looping will be terminated once the covergence is reached. 
+There are two dag files in a nested structure. `training.dag` re-submits the sub-dag `opto.dag` until convergence is reached (at most 200 retries, `RETRY PAR_TRAINING` in `training.dag`). Each `opto.dag` iteration:
+1. `src/update_simulate_submit.py` fills the macro template with the parameters in `currentparams.json` and writes `results/macros/<iter>.mac`. `executables/submit_simulations.sh` then simulates it as ntuples (`outntuple`, `storeHits 1`).
+2. `src/time_residuals.py` calculates $t_{res}$ from the simulated hit times, then works out the $\chi^2$ against the data $t_{res}$ `.npy`.
+3. `src/select_parameters.py` fits the GP and proposes the next point into `currentparams.json`.
+4. `src/checkconverge.py` (the POST script of `training.dag`) decides whether to stop.
+
+Everything that depends on the optics is read from **`paramsbound.json`**, the active config.
+
+### Optics configs (PPO or PPO + bis-MSB)
+There is one config file per optics. `paramsbound.json` is a copy of one of them.
+
+| Key | `paramsbound_bismsb.json` | `paramsbound_ppo.json` |
+|---|---|---|
+| Fitted parameters (every `[low, high]` entry) | T1–T4, TR, A1–A4, BISRT | T1–T4, TR, A1–A4 |
+| `Type` | `Bi214` / `Po214` (particle to fit) | same |
+| `RunID` | run number for the simulation | same |
+| `Material` | `labppo_2p2_bismsb_2p2_scintillator` | `labppo_2p2_scintillator` |
+| `MacroTemplate` | `macros/bi214_template_extntuple.mac`, `macros/po214_template_extntuple.mac` | `macros/ppobi214_template_extntuple.mac`, `macros/ppopo214_template_extntuple.mac` |
+| `DataTres` | data $t_{res}$ `.npy` for each particle | same |
+| `StartParams` | `currentparams_clean.json` | `currentparams_cleanppo.json` |
+
+Any key whose value is `[low, high]` is a fitted parameter; every other key is configuration. To fit Po214 instead of Bi214, change `Type` in the config.
 
 ### Run Command
-This package is assumed user have already owned the Bi214 and Po214 tres in the format of `.npy`. If not, please use the usual BiPo214 cut windows to select candidates, and then retriving these candidates in the RATDS data files and perform the similar function in `extract_residuals()` in `src/time_residual.py`
+1. **Data $t_{res}$.** The data $t_{res}$ must already exist as `.npy`, and `DataTres` must point to it. To make it from processed ntuples:
+    * Tag BiPo214 coincidences with `tagging/newBiPo214Recon.cpp`. Compile it under `set_env.sh`; it writes `BiT`/`PoT` trees with `hitTimes` and `tres` for each hit, using the phase's effective velocity.
+    * Flatten the tagged `tres` into `.npy` (energy window and $R<4$ m):
 
-1. From the fresh start, it is recommended to run the setup 
+        `python tagging/extract_tres_extntuple.py -i "<tagged ntuple dir or glob>" -o <out>.npy -p Bi214`   (or `-p Po214`)
 
-    `python initial.py` at `..../pytor_bayesian_opti` level
+2. **Choose the optics and reset:**
 
-    and fill in dependenies path to produce necessary path variables and empty directories.
+    `./clean_files.sh ppo` or `./clean_files.sh bismsb`
 
-2. Please change the path of inputpaths in `rat.dsreader()` and `np.load()` at function `src/   time_residual.py` `cal_objective()` respectively.
+    This copies `paramsbound_<phase>.json` to `paramsbound.json` and `StartParams` to `currentparams.json`. It also wipes `results/` and `algo_log.txt` from the last tuning. With no argument, it keeps the current `paramsbound.json`.
 
-3. The following step will be 
-    `./clean_files.sh` to remove any leftover results from the last tuning.
+3. **Check which optics is active** before submitting:
 
-4. The Final step is start running the tuning is
+        grep -E '"Material"|"StartParams"' paramsbound.json   # ppo: labppo_2p2_scintillator / currentparams_cleanppo.json
+        grep -c BISRT currentparams.json                        # ppo: 0, bismsb: 1
 
-    `condor_submit_dag dag_running/train.dag`, and the maximum iteration is 1000, but it can be changed up to user's choice.
-5.  With steps above, log files, macros, parameter values and pretty plots should be automatically  filled in `result/condor_logs`, `result/macros`, `result/pars` and `result/plots` in each iteration. 
-6.  In the end, plots of loss as a function of iterations, in both log and normal scale, can be     generated by 
-`python utils/plot_chi2_iter.py` 
-in `result/plots`. 
+4. **Start the tuning:**
 
-7. In `time_residuals.py` rat.dsreader line, changing the path to be the path of saving ratds
-8. If user is interested in two models's comparison along with data, user should revise the directory in `utils/twomodels_comparison.py`  and run it with python command.
+    `condor_submit_dag dag_running/training.dag`
 
-A few example plots are shoen below when user executes `utils/plot_chi2_iter.py` or automatically generated by program.  
+5. With the steps above, log files, macros, parameter values and plots are written to `results/condor_logs`, `results/macros`, `results/pars` and `results/plots` in each iteration. Each iteration also writes the material, the effective velocity and the data file it used to `algo_log.txt`, for example:
+
+        tres calculator: material=labppo_2p2_scintillator, v_innerAV(r=2m)=...
+        Loading Bi214 tres data from .../rat-8.3.1/2p2/tresnpy/Bi214.npy
+
+6. In the end, plots of the loss against iteration, on both log and linear scales, are made in `results/plots` by
+
+    `python utils/plot_chi2_iter.py [results/pars]`
+
+7. Data/MC $t_{res}$ comparisons from `.npy` files: `python utils/data_mc_comparison.py <data.npy> <mc.npy> Bi214 --phase ppo --data-version rat-8.3.1 --mc-version rat-8.3.3 --output-dir results/plots`. For a two-model comparison, edit the paths in `utils/twomodels_comparison.py`.
+
+
+A few example plots are shown below, either produced by `utils/plot_chi2_iter.py` or made automatically by the program.
 ![iterlogchi2](images/iterlogchi2.png)  
-Figure 2: $\chi2$ as a function of iterations.
+Figure 2: $\chi^2$ as a function of iterations.
 ![trescomparison](images/tres_comparison.png)  
-Figure 3: tres compaison between data and mc sample at certain iteration.
+Figure 3: tres comparison between data and MC sample at a certain iteration.
 ![T1T2](images/T1_T2.png)  
 Figure 4: Predicted mean and uncertainty from Surrogate and the log(EI) over the projection space over the maximum log(EI) point. 
 
-### Code Changes when Feartures Increase/Decrease
-This block is to help user of source code changing when increasing/decreasing features are needed. I will mention the essential changes in the case of adding feature.
-1. `currentparams_clean.json`
-    Attach your features as key and initial guess just upon "iter" line
-2. `src/update_simulate_submit.py`: In line `raw_text.substitute` adding the feature name in
-3. Ensure the macro in `macros/` have the same variable name that can be accessed by `update_simulate_submit.py`
-4. `src/select_parameters.py`: Add the new fearture name and the rank in `new_params`. Adding the interesting covariance you want to check with this new feature in `subspace`
-5. `src/checkconverge.py`: Define addtional coverge criteria related to this new feature if needed, like `shift_t1A1`
-6. `utils/plot_surr_acq.py`: Add new feature rank and name in `par_name`
-7. `utils/plot_tres.py`: Add new feature name in `parameter_names` in all functions in it. Readjust `first_line` to `fifth_line` if needed to include the new feature in plot legend
-
-
+### Code Changes when Features Increase/Decrease
+The parameter list now comes from the config, so adding or removing a feature mostly means editing the config, the start point and the macro:
+1. `paramsbound_<phase>.json`: add the feature as `"NAME": [low, high]`, next to the other `[low, high]` entries.
+2. `currentparams_clean.json` / `currentparams_cleanppo.json`: add `"NAME": <initial guess>` in the same position, above the `"iter"` line.
+3. The macro template in `macros/` must use `${NAME}`. `src/update_simulate_submit.py` fills every fitted parameter automatically.
+4. `src/select_parameters.py`: the parameter names and `new_params` follow the config automatically. Add the projections you want to look at to `subspace`. The amplitude constraint uses indices 5–8 (A1–A4).
+5. `src/checkconverge.py`: add a convergence criterion for the new feature if needed, like `shift_t1A1`.
+6. `utils/plot_surr_acq.py`: add the new feature's index and name to `par_name`.
+7. `utils/plot_tres.py`: add the new feature name to `parameter_names`, and adjust `first_line` to `fifth_line` if it should appear in the plot legend.

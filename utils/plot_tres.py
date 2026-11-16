@@ -209,7 +209,9 @@ def time_residual_agreement(data, model, iter, pars):
     os.makedirs(f"results/plots/{iter}", exist_ok=True)
     plt.savefig(f"results/plots/{iter}/tres_comparison_{iter}_log.png")
     plt.close()
-def threetime_residual_agreement(data, model1,model2,label0,label1,label2):
+def threetime_residual_agreement(data, model1,model2,label0,label1,label2,
+                                 output_dir="results/plots", output_tag="tres_comparison_gridscan_bay",
+                                 make_log=True, text=None):
     print("In time_residual_agreement plotting...")
     SNOplus_style()
     """
@@ -235,7 +237,7 @@ def threetime_residual_agreement(data, model1,model2,label0,label1,label2):
     ITR(model1,"label1")
     ITR(model2,"label2")
     
-    os.makedirs(f"results/plots/", exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
     
     # Calculate histograms and significance for both models
     counts_data, bin_edges = np.histogram(data, bins=binning)
@@ -297,7 +299,12 @@ def threetime_residual_agreement(data, model1,model2,label0,label1,label2):
         sharex=True,
         gridspec_kw={'height_ratios': [3, 1], 'hspace': 0.0},
     )
-    ax_lin_top.text(0.35, 0.95, 'SNO+ Preliminary', transform=ax_lin_top.transAxes, va='top', fontsize=18)
+    if text:
+        # legend sits top-right; keep the labels below it
+        ax_lin_top.text(0.45, 0.70, 'SNO+ Preliminary', transform=ax_lin_top.transAxes, va='top', fontsize=18)
+        ax_lin_top.text(0.45, 0.63, text, transform=ax_lin_top.transAxes, va='top', fontsize=16)
+    else:
+        ax_lin_top.text(0.35, 0.95, 'SNO+ Preliminary', transform=ax_lin_top.transAxes, va='top', fontsize=18)
    
     ax_lin_top.errorbar(
         bin_centers[mask],
@@ -329,8 +336,10 @@ def threetime_residual_agreement(data, model1,model2,label0,label1,label2):
     ax_lin_bottom.set_ylim((-0.5, 0.49))
     
     fig_lin.subplots_adjust(hspace=0.0)
-    plt.savefig(f"results/plots/tres_comparison_gridscan_bay_linear.png")
+    plt.savefig(os.path.join(output_dir, f"{output_tag}_linear.png"), bbox_inches="tight")
     plt.close()
+    if not make_log:
+        return
     
     # === LOG SCALE PLOT ===
     fig_log, (ax_log_top, ax_log_bottom) = plt.subplots(
@@ -340,7 +349,12 @@ def threetime_residual_agreement(data, model1,model2,label0,label1,label2):
         sharex=True,
         gridspec_kw={'height_ratios': [3, 1], 'hspace': 0.0},
     )
-    ax_log_top.text(0.35, 0.95, 'SNO+ Preliminary', transform=ax_log_top.transAxes, va='top', fontsize=18)
+    if text:
+        # bottom-left sits under the falling edge of the spectrum, clear of the curves and the legend
+        ax_log_top.text(0.08, 0.22, 'SNO+ Preliminary', transform=ax_log_top.transAxes, va='top', fontsize=18)
+        ax_log_top.text(0.08, 0.15, text, transform=ax_log_top.transAxes, va='top', fontsize=16)
+    else:
+        ax_log_top.text(0.35, 0.95, 'SNO+ Preliminary', transform=ax_log_top.transAxes, va='top', fontsize=18)
     
     ax_log_top.errorbar(
         bin_centers[mask],
@@ -349,7 +363,7 @@ def threetime_residual_agreement(data, model1,model2,label0,label1,label2):
         fmt='o',
         color='black',
         linewidth=2,
-        label='data',
+        label=label0,
         capsize=2,
     )
     ax_log_top.hist(model1, bins=binning, weights=np.ones_like(model1, dtype=float) / total_model1, histtype="step", color="red", linewidth=2, label=label1)
@@ -373,5 +387,5 @@ def threetime_residual_agreement(data, model1,model2,label0,label1,label2):
     ax_log_bottom.set_ylim((-1.0, 0.99))
     
     fig_log.subplots_adjust(hspace=0.0)
-    plt.savefig(f"results/plots/tres_comparison_gridscan_bay_log.png")
+    plt.savefig(os.path.join(output_dir, f"{output_tag}_log.png"), bbox_inches="tight")
     plt.close()
