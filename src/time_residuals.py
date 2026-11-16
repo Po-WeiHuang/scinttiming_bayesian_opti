@@ -121,11 +121,31 @@ def extract_residuals_extntuple(run, particletype):
     time_residuals = []
 
     # Build file pattern from directory + run number
-    file_pattern = "/data/snoplus2/weiiiii/pytor_bayesian_opti/*ntuple.root"
+    # simulation output directory: exported by executables/time_residuals.sh (set by initial.py)
+    sim_dir = os.environ.get("SIMSAVEPATH", "/data/snoplus2/weiiiii/pytor_bayesian_opti")
+    file_pattern = f"{sim_dir}/*ntuple.root"
     file_list = sorted(glob.glob(file_pattern))
 
+    # skip zombie / unclosed / incomplete files (e.g. a rat job killed mid-write) instead of crashing
+    good_files, bad_files = [], []
+    for f in file_list:
+        try:
+            tfile = ROOT.TFile.Open(f)  # PyROOT raises OSError when the file cannot be opened at all
+        except OSError:
+            tfile = None
+        ok = bool(tfile and not tfile.IsZombie() and not tfile.TestBit(ROOT.TFile.kRecovered)
+                  and tfile.GetKey("output") and tfile.GetKey("meta"))
+        (good_files if ok else bad_files).append(f)
+        if tfile:
+            tfile.Close()
+    if bad_files:
+        print(f"Skipping {len(bad_files)} unreadable/zombie ntuple(s): {bad_files}")
+        with open("algo_log.txt", "a") as outlog:
+            outlog.write(f"\nSkipping {len(bad_files)} unreadable/zombie ntuple(s): {bad_files}")
+    file_list = good_files
+
     if not file_list:
-        print(f"No ROOT files found for pattern: {file_pattern}")
+        print(f"No readable ROOT files found for pattern: {file_pattern}")
         return []
 
     chain = ROOT.TChain("output")
@@ -168,6 +188,7 @@ def extract_residuals_extntuple(run, particletype):
         outlog.write(f"\ntres calculator: material={material}, v_innerAV(r=2m)={inner_av_velocity:.4f} mm/ns")
 
     psup_system_id = RAT.DU.Point3D.GetSystemId("innerPMT")
+    av_system_id = RAT.DU.Point3D.GetSystemId("av")
     tres_calc = rat.utility().GetTimeResidualCalculator()
     chan_status = rat.utility().GetPMTCalStatus()
 
@@ -199,6 +220,11 @@ def extract_residuals_extntuple(run, particletype):
 
         event_position = ROOT.TVector3(chain.posx, chain.posy, chain.posz)
         event_point = RAT.DU.Point3D(psup_system_id, event_position)
+        # fiducial cut matching the data (posr_av <= 4000 mm): radius in AV coordinates, then back to PSUP
+        event_point.SetCoordinateSystem(av_system_id)
+        if event_point.Mag() > 4000.0:
+            continue
+        event_point.SetCoordinateSystem(psup_system_id)
         t = chain.time
 
         for iPMT in range(len(hittimes)):
@@ -225,21 +251,11 @@ def cal_objective(particletype: str):
 
         print(f"\nExtracted simulated residuals.")
 
-        # load up the data residuals to compare to
-        if particletype == "Bi210":
-            print("Loading Bi210 tres data")
-            outlog.write("Loading Bi210 tres data")
-            data_residuals = np.load("/data/snoplus3/weiii/BiPo210/rat-8.0.1/bismsb/ratds/Bi210.npy", allow_pickle = True)
-        elif particletype == "Bi214":
-            print("Loading Bi214 tres data")
-            outlog.write("Loading Bi214 tres data")
-            data_residuals = np.load("/data/snoplus3/weiii/BiPo214/rat-8.2.0/bismsb/tresnpy/Bi214_354099_354139.npy", allow_pickle = True)
-            #data_residuals = np.load("/data/snoplus3/weiii/BiPo214/rat-8.2.0/ppo/data/Bi214_300000_300024.npy", allow_pickle = True)
-        elif particletype == "Po214":
-            print("Loading Po214 tres data")
-            outlog.write("Loading Po214 tres data")
-            data_residuals = np.load("/data/snoplus3/weiii/BiPo214/rat-8.2.0/bismsb/tresnpy/Po214_354099_354139.npy", allow_pickle = True)
-            #data_residuals = np.load("/data/snoplus3/weiii/BiPo214/rat-8.2.0/ppo/data/Po214_300000_300024.npy", allow_pickle = True)
+        # load up the data residuals to compare to; the path comes from the optics config (paramsbound.json "DataTres")
+        data_path = boundparams["DataTres"][particletype]
+        print(f"Loading {particletype} tres data from {data_path}")
+        outlog.write(f"Loading {particletype} tres data from {data_path}")
+        data_residuals = np.load(data_path, allow_pickle = True)
         #data_residuals = np.concatenate(data_residuals)
 
         # create the binned histograms and calculate the chi2

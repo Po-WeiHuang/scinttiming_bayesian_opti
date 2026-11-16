@@ -1,6 +1,5 @@
 #!/bin/bash
-#source /home/huangp/rat7015/rat/wei_env_Will.sh
-source /home/huangp/fresh_rat/rat/wei_env_Will.sh
+source /data/snoplus/software/snocave_Alma9/set_env.sh
 source /data/snoplus3/weiii/botorch_venv/bin/activate
 # Log the current directory and environment variables
 echo "Current directory: $(pwd)" >> env.txt

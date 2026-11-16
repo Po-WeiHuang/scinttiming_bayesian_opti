@@ -2,14 +2,19 @@
 
 JOB_ID=$$1
 MACRO_NAME=$$2
+RUNID=$$3   # from paramsbound.json "RunID", passed by src/update_simulate_submit.py
 echo "######### In SIMULATION PROCESS #########" >> algo_log.txt
 
 source ${RATPATH}
 source ${VIRTPYTHONPATH}
-#rm -rf /data/snoplus2/weiiiii/pytor_bayesian_opti/*.root
 
-#rat -n ${RUNID} -N 50 -o "${SIMSAVEPATH}/output_$${JOB_ID}.root" results/macros/$${MACRO_NAME}
-rat -n ${RUNID} -N 200 -o "${SIMSAVEPATH}/output_$${JOB_ID}.root" results/macros/$${MACRO_NAME}
+OUTFILE="${SIMSAVEPATH}/output_$${JOB_ID}.ntuple.root"
+rat -n $${RUNID} -N ${NEVENTS} -o "$${OUTFILE}" results/macros/$${MACRO_NAME}
+RAT_STATUS=$$?
 
+# fail the job (so DAGMan retries it) if rat failed or left no output, e.g. a RATDB server error
+if [ $${RAT_STATUS} -ne 0 ] || [ ! -s "$${OUTFILE}" ]; then
+    echo "SIMULATION $${JOB_ID} FAILED: rat exit $${RAT_STATUS}, output $${OUTFILE}" >> algo_log.txt
+    exit 1
+fi
 echo "######### END SIMULATION PROCESS #########" >> algo_log.txt
-

@@ -9,6 +9,18 @@
   "A3": [0.01,0.25],
   "A4": [0.001,0.25],
   "BISRT": [1.5,3.0],
-  "Type": "Bi214",
-  "RunID": 354109
+  "Type": "Po214",
+  "RunID": 354109,
+  "Material": "labppo_2p2_bismsb_2p2_scintillator",
+  "StartParams": "currentparams_clean.json",
+  "MacroTemplate": {
+    "Bi214": "macros/bi214_template_extntuple.mac",
+    "Po214": "macros/po214_template_extntuple.mac",
+    "Bi210": "macros/bi210_template.mac"
+  },
+  "DataTres": {
+    "Bi214": "/data/snoplus3/weiii/BiPo214/fullFill/rat-8.3.1/bismsb/tresnpy/Bi214.npy",
+    "Po214": "/data/snoplus3/weiii/BiPo214/fullFill/rat-8.3.1/bismsb/tresnpy/Po214.npy",
+    "Bi210": "/data/snoplus3/weiii/BiPo210/rat-8.0.1/bismsb/ratds/Bi210.npy"
+  }
 }

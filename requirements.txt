@@ -1,0 +1,12 @@
+# Python packages for the BO loop. Create the venv with python3.9: it must match the
+# python that the RAT/ROOT build uses. ROOT and rat themselves come from the RAT env, not pip.
+# PyTorch CUDA 12.8 wheels (torch 2.8.0+cu128) are on the PyTorch index:
+--extra-index-url https://download.pytorch.org/whl/cu128
+
+torch>=2.8.0        # resolves to 2.8.0+cu128 from the index above (2.8.x is the last release for python3.9)
+botorch>=0.10.0     # brings gpytorch; 0.10.0 is the last release for python3.9
+matplotlib
+numpy
+uproot
+scipy               # imported by the loop/plotting code
+tqdm                # imported by tagging/getrunidgtids*.py

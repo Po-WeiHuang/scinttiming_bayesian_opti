@@ -3,3 +3,5 @@ tagging/config/
 utils/PlottingStyle/__pycache__
 
 
+.venv/
+archive/

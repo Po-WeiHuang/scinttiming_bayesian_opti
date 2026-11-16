@@ -88,7 +88,9 @@ if __name__ == "__main__":
         with open("paramsbound.json", "r") as f:
             params = json.load(f)
         
-        bounds = [(params[ikey]) for ikey in params if ikey!="Type" and ikey!="RunID"]
+        # fitted parameters are the [low, high] entries; everything else (Type, RunID, Material, ...) is config
+        param_names = [ikey for ikey in params if isinstance(params[ikey], list)]
+        bounds = [params[ikey] for ikey in param_names]
         print(bounds)
         
 
@@ -134,18 +136,7 @@ if __name__ == "__main__":
             curr_params = json.load(f)
             iteration = curr_params["iter"]
 
-        new_params = {
-            "T1": float(candidate[0][0]),
-            "T2": float(candidate[0][1]),
-            "T3": float(candidate[0][2]),
-            "T4": float(candidate[0][3]),
-            "TR": float(candidate[0][4]),
-            "A1": float(candidate[0][5]),
-            "A2": float(candidate[0][6]),
-            "A3": float(candidate[0][7]),
-            "A4": float(candidate[0][8]),
-            "BISRT": float(candidate[0][9]),
-        }
+        new_params = {name: float(candidate[0][i]) for i, name in enumerate(param_names)}
 
         merged_params = curr_params | new_params
 
@@ -154,6 +145,7 @@ if __name__ == "__main__":
         if iteration > 1: # only plots surrogate/acquisition when measuing more than 1 point
             particle_type = params.get("Type", None)
             subspace = [(0,1),(2,3),(0,4),(5,6),(7,8),(0,5),(1,6),(2,7),(3,8),(4,9),(0,9)]
+            subspace = [dims for dims in subspace if max(dims) < len(param_names)]  # (4,9),(0,9) need BISRT
             for projection_dim in subspace:
                 mean, sigma, acq, xx, yy = get_mean_sigma_EI_frombestAcq_2Dprojection(bounds,gp,candidate,logEI,proj_dim=projection_dim)
                 measured_points_subspace = np.column_stack((train_X[:,projection_dim[0]],train_X[:,projection_dim[1]]))

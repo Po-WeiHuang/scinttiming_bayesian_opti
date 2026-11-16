@@ -1,6 +1,5 @@
 JOB MC_SIMULATION     submit_files/simulate.submit
-SCRIPT PRE MC_SIMULATION executables/delete_simulations.sh
-SCRIPT PRE MC_SIMULATION src/update_simulate_submit.py
+SCRIPT PRE MC_SIMULATION executables/pre_simulation.sh
 RETRY MC_SIMULATION 2
 
 JOB TIME_RESIDUALS    submit_files/time_residuals.submit
