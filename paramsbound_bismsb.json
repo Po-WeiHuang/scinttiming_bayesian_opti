@@ -12,7 +12,7 @@
   "Type": "Po214",
   "RunID": 354109,
   "Material": "labppo_2p2_bismsb_2p2_scintillator",
-  "StartParams": "currentparams_ratdb_bismsb_po214.json",
+  "StartParams": "currentparams_clean.json",
   "MacroTemplate": {
     "Bi214": "macros/bi214_template_extntuple.mac",
     "Po214": "macros/po214_template_extntuple.mac",

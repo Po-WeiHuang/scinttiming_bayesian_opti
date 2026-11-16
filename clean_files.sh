@@ -21,5 +21,8 @@ cp training.dag dag_running/training.dag
 # optional optics choice: ./clean_files.sh ppo | bismsb  -> activates paramsbound_<phase>.json
 if [ -n "$1" ]; then cp "paramsbound_$1.json" paramsbound.json || exit 1; fi
 # start point comes from the active config's "StartParams" (default: currentparams_clean.json)
-cp "$(python3 -c 'import json; print(json.load(open("paramsbound.json")).get("StartParams", "currentparams_clean.json"))')" currentparams.json
+START="$(python3 -c 'import json; print(json.load(open("paramsbound.json")).get("StartParams", "currentparams_clean.json"))')"
+cp "$START" currentparams.json || exit 1
+echo "Start parameters: $START -> currentparams.json"
+echo "To start elsewhere, edit \"StartParams\" in paramsbound.json, then rerun ./clean_files.sh (no argument)."
 cp submit_files/simulate_template.submit submit_files/simulate.submit

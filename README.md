@@ -152,6 +152,8 @@ Any key whose value is `[low, high]` is a fitted parameter; every other key is c
 
     This copies `paramsbound_<phase>.json` to `paramsbound.json` and `StartParams` to `currentparams.json`. It also wipes `results/` and `algo_log.txt` from the last tuning. With no argument, it keeps the current `paramsbound.json`.
 
+    **Reminder:** to start from different parameters, point `"StartParams"` in `paramsbound.json` at your own start file after `./clean_files.sh ppo|bismsb`. Then run `./clean_files.sh` again with no argument so it copies that file to `currentparams.json`.
+
 3. **Check which optics is active** before submitting:
 
         grep -E '"Material"|"StartParams"' paramsbound.json   # ppo: labppo_2p2_scintillator / currentparams_cleanppo.json
